@@ -1,0 +1,13 @@
+{
+  "defaultProfile": "personal",
+  "srcDir": "src",
+  "testDir": "test",
+  "retry": 2,
+  "sameTestFailLimit": 5,
+  "profiles": {
+    "personal": {
+      "scriptId": "ここに確認用GASのスクリプトID",
+      "allowedScriptIds": ["ここに確認用GASのスクリプトID"]
+    }
+  }
+}

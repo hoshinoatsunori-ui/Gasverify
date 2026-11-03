@@ -1,0 +1,6 @@
+node_modules/
+.gasverify/
+credentials.json
+token.json
+.tokens/
+results/

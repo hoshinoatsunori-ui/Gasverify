@@ -1,0 +1,20 @@
+{
+  "name": "gasverify",
+  "version": "0.1.0",
+  "description": "Claude Codeが生成したGASを push・実行・判定まで自動で回すCLI",
+  "bin": {
+    "gasverify": "bin/gasverify.js"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "googleapis": "^189.0.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}

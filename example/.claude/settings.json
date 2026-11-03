@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gasverify verify:*)",
+      "Bash(gasverify test:*)",
+      "Bash(gasverify push)",
+      "Bash(gasverify run:*)",
+      "Bash(gasverify doctor:*)"
+    ],
+    "ask": [
+      "Bash(gasverify login:*)",
+      "Bash(gasverify push --force:*)",
+      "Edit(src/appsscript.json)",
+      "Edit(gasverify.config.json)"
+    ],
+    "deny": [
+      "Bash(clasp deploy:*)",
+      "Bash(clasp push:*)"
+    ]
+  }
+}
