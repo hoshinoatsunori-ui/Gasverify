@@ -4,6 +4,7 @@
       "Bash(gasverify verify:*)",
       "Bash(gasverify test:*)",
       "Bash(gasverify push)",
+      "Bash(gasverify pull)",
       "Bash(gasverify run:*)",
       "Bash(gasverify doctor:*)"
     ],

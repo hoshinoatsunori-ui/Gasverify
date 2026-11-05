@@ -7,7 +7,8 @@
  *   gasverify login [--profile p]            ブラウザで承認（必要なスコープはマニフェストから決める）
  *   gasverify logout [--profile p]           トークンを削除
  *   gasverify doctor [--fix]                 準備状況を検査（--fix は権限を広げない下準備のみ自動実行）
- *   gasverify push [--force]                 src/ と test/ をGASへ反映
+ *   gasverify push [--force]                 src/ と test/ をGASへ反映（GAS側にしかない変更があれば止まる）
+ *   gasverify pull                           GAS側の内容を .gasverify/remote/ に取り、手元との違いを一覧（src は上書きしない）
  *   gasverify run <関数名> [--args '[...]'] [--live]   関数を実行（既定はテストモード＝副作用なし）
  *   gasverify test [--filter 文字列]          test_ 関数を実行して合否を集計
  *   gasverify verify [--filter 文字列]        push → test を一括実行（Claude Codeは原則これだけ使う）
@@ -37,7 +38,7 @@ function parse(argv) {
   return opts;
 }
 
-const HELP = require('fs').readFileSync(__filename, 'utf8').split('\n').slice(3, 15).map((l) => l.replace(/^ \* ?/, '')).join('\n');
+const HELP = require('fs').readFileSync(__filename, 'utf8').split('\n').slice(3, 16).map((l) => l.replace(/^ \* ?/, '')).join('\n');
 
 (async () => {
   const opts = parse(process.argv.slice(2));

@@ -13,6 +13,7 @@ Claude Code が生成した GAS を push → テスト実行 → 判定 → 診�
 | `lib/api.js` | Apps Script API 呼び出し（push は projects.updateContent、実行は scripts.run＋再試行） |
 | `lib/auth.js` | OAuth（プロファイルごとに `~/.gasverify/<profile>/`） |
 | `lib/files.js` | push 対象の収集、関数対応表、テスト発見、静的検査 |
+| `lib/drift.js` | push前の差分確認。前回pushの指紋を `.gasverify/last-push/` に保存し、GAS側の変更を検出 |
 | `lib/report.js` | 診断書 JSON と実行履歴 `.gasverify/runs/` |
 | `runtime/gasverify_runtime.js` | GAS 側ランタイム（GV）。push 時に自動追加 |
 | `templates/` | `gasverify init` が利用者のプロジェクトに置く CLAUDE.md・コマンド・settings |
@@ -24,7 +25,7 @@ Claude Code が生成した GAS を push → テスト実行 → 判定 → 診�
 
 - **終了コードの意味を変えない**：0 成功 / 1 コードの誤り / 2 準備不足 / 3 実行基盤。複数混在時は 2 > 3 > 1 > 0
 - **判定は実測に基づく**：`classify.js` を変えるときは、実測の根拠（ケースID）か公式ドキュメントを添える。推定はコメントで「未実測」と明記する
-- **安全策を弱めない**：許可リスト外の拒否、GAS側にだけあるファイルの保護、スコープの自動追加禁止、テストモード既定
+- **安全策を弱めない**：許可リスト外の拒否、push前の差分確認（GAS側にしかない変更を消さない）、スコープの自動追加禁止、テストモード既定
 - 外部依存は `googleapis` と `@google-cloud/local-auth` のみ。増やす場合は理由を README に書く
 - 出力：標準出力は1回の実行につき診断書 JSON を1つ、人向けの要約は標準エラー
 - 文言（メッセージ・next）は日本語
@@ -33,7 +34,7 @@ Claude Code が生成した GAS を push → テスト実行 → 判定 → 診�
 
 ```
 npm install
-npm test        # 30件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
+npm test        # 37件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
 ```
 
 - e2e テストは模擬サーバーと同じプロセスで動くため、CLI は必ず非同期（execFile）で呼ぶ。spawnSync を使うとサーバーが応答できずに止まる
@@ -55,6 +56,6 @@ npm test        # 30件。模擬サーバー相手の通しを含む（実際の
 1. 実際の Google での通し確認（example で verify → 終了コード1 → 修正 → 0）
 2. F11 ログ取得（console.log）
 3. 未実測ケース：C12 実行時間超過（code=10 の想定）、H06 Apps Script API 無効時
-4. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り
+4. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り。デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
 5. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）
 6. F12 カバレッジ簡易計測

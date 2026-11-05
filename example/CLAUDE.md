@@ -40,10 +40,20 @@ function test_parseAmount_fullwidthYen() {
 - テストで外部HTTPの応答が必要なら `GV.stubFetch('api.example.com', { ... })` を使う
 - 件数の多い処理は `limit` 引数を受け付け、6分の実行時間制限に収める
 - スプレッドシートやフォルダのIDは本体コードに直書きせず、引数か設定から受け取る（テスト用データに差し替えるため）
+- 設定（シートID・シート名・送り先など）はファイルの先頭の定数にまとめる
+- 列は番号で決め打ちせず、1行目の見出しの名前で探す（相手がシートに列を足すと、番号では別の列を読んでしまう）
+- 普通の JavaScript で書く（TypeScript は push 時に変換されない）
+
+## GAS側との差分
+
+- `gasverify push` / `verify` は、GAS側にしかない変更（エディタで直された分）を見つけると終了コード2で止まり、GAS側の内容を `.gasverify/remote/<日時>/` に保存する
+- そのときは手元の `src` とその保存先を比べ、残すべき変更を手元に取り込んでから再実行する（取り込めば自動で通る）。GAS側の変更を捨てるかどうかは人に確認する
+- 手元と GAS 側の違いだけ見たいときは `gasverify pull`（手元の `src` は上書きしない）
 
 ## やってはいけないこと
 
 - `appsscript.json` の `oauthScopes` を勝手に増やす（増やす場合は理由を報告し、人が `gasverify login` で承認する）
 - `gasverify.config.json` の `allowedScriptIds` を変更する
 - `gasverify push --force`、`gasverify run --live` を人の指示なしに使う
+- GASのエディタでコードを直す、`clasp pull` で手元の `src` を上書きする
 - 本番スクリプトを対象にする

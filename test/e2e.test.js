@@ -103,7 +103,8 @@ test('安全策：許可リスト外・リモートだけのファイル・構�
   // リモートにだけあるファイルは消さずに止める
   let r = await cli(env, proj, 'push');
   assert.strictEqual(r.code, 2);
-  assert.deepStrictEqual(r.diag.remoteOnly, ['Old']);
+  assert.strictEqual(r.diag.reason, 'remote_changed');
+  assert.deepStrictEqual(r.diag.remoteOnly, ['Old.gs']);
   assert.strictEqual(mock.state.pushes, 0);
   r = await cli(env, proj, 'push', '--force');
   assert.strictEqual(r.code, 0, r.stderr);
@@ -162,6 +163,63 @@ test('同じテストが5回連続で失敗すると stopLoop', async (t) => {
   assert.strictEqual(r.code, 1);
   assert.strictEqual(r.diag.stopLoop, true);
   assert.deepStrictEqual(r.diag.stuckTests, ['test_parseAmount_fullwidthYen']);
+});
+
+test('push前の差分確認：エディタでの変更を消さずに止め、取り込めば通る', async (t) => {
+  const mock = await startMockServer({ scriptId: SCRIPT_ID });
+  t.after(() => mock.close());
+  const { home, proj } = setup();
+  const env = { GASVERIFY_HOME: home, GASVERIFY_ROOT_URL: mock.url };
+
+  // 初回 push（GAS側は空）→ 記録が残る
+  let r = await cli(env, proj, 'push');
+  assert.strictEqual(r.code, 0, r.stderr);
+  assert.ok(fs.existsSync(path.join(proj, '.gasverify', 'last-push', `${SCRIPT_ID}.json`)));
+
+  // 改行コードだけの違いは変更とみなさない
+  const receipt = mock.state.files.find((f) => f.name === 'Receipt');
+  receipt.source = receipt.source.replace(/\n/g, '\r\n') + '\n\n';
+  r = await cli(env, proj, 'push');
+  assert.strictEqual(r.code, 0, r.stderr);
+
+  // GASエディタで1行直された想定
+  const edited = mock.state.files.find((f) => f.name === 'Receipt');
+  edited.source = edited.source.replace('/¥\\s*([\\d,]+)/', '/[¥￥]\\s*([\\d,]+)/');
+  const pushesBefore = mock.state.pushes;
+  r = await cli(env, proj, 'verify');
+  assert.strictEqual(r.code, 2, r.stderr);
+  assert.strictEqual(r.diag.reason, 'remote_changed');
+  assert.deepStrictEqual(r.diag.remoteModified, ['Receipt.gs']);
+  assert.strictEqual(r.diag.basis, 'last_push');
+  assert.strictEqual(mock.state.pushes, pushesBefore); // 上書きしていない
+  const saved = path.join(proj, r.diag.remoteCopy, 'Receipt.js');
+  assert.match(fs.readFileSync(saved, 'utf8'), /\[¥￥\]/);
+
+  // pull：手元の src は変えずに違いを一覧
+  r = await cli(env, proj, 'pull');
+  assert.strictEqual(r.code, 0, r.stderr);
+  assert.deepStrictEqual(r.diag.differs.map((x) => `${x.file}:${x.state}`), ['Receipt.SERVER_JS:different']);
+  assert.doesNotMatch(fs.readFileSync(path.join(proj, 'src', 'Receipt.js'), 'utf8'), /\[¥￥\]/);
+
+  // GAS側の変更を手元に取り込めば、そのまま push できる
+  fs.writeFileSync(path.join(proj, 'src', 'Receipt.js'), fs.readFileSync(saved, 'utf8'));
+  r = await cli(env, proj, 'verify');
+  assert.strictEqual(r.code, 0, r.stderr + JSON.stringify(r.diag));
+});
+
+test('push前の差分確認：初回は手元と違う既存ファイルで止まる。--force で上書き', async (t) => {
+  const mock = await startMockServer({ scriptId: SCRIPT_ID, initialFiles: [{ name: 'Receipt', type: 'SERVER_JS', source: 'function parseAmount() { return 0; }' }] });
+  t.after(() => mock.close());
+  const { home, proj } = setup();
+  const env = { GASVERIFY_HOME: home, GASVERIFY_ROOT_URL: mock.url };
+  let r = await cli(env, proj, 'push');
+  assert.strictEqual(r.code, 2);
+  assert.strictEqual(r.diag.basis, 'local');
+  assert.deepStrictEqual(r.diag.remoteModified, ['Receipt.gs']);
+  r = await cli(env, proj, 'push', '--force');
+  assert.strictEqual(r.code, 0, r.stderr);
+  r = await cli(env, proj, 'push');
+  assert.strictEqual(r.code, 0, r.stderr);
 });
 
 test('init：設定とClaude Code連携ファイルを作る', async () => {

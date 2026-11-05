@@ -1,4 +1,4 @@
-# gasverify v0.1.0
+# gasverify v0.2.0
 
 Claude Code が書いた GAS を、**push → テスト実行 → 判定 → 診断書**まで自動で回す CLI。
 Claude Code は `gasverify verify` の終了コードを見て、自分でコードを直すか、人に依頼して止まるかを決める。
@@ -91,7 +91,8 @@ gasverify help
 | `verify [--filter 文字列]` | push → test。Claude Code は原則これだけ使う |
 | `test [--filter 文字列]` | push せずにテストだけ |
 | `run <関数> [--args '[...]']` | 関数を1つ実行（テストモード）。`--live` で副作用ありの本番実行 |
-| `push [--force]` | 反映。GAS側にだけあるファイルがあると止まる（`--force` で削除して反映） |
+| `push [--force]` | 反映。GAS側にしかない変更（エディタでの修正、GAS側だけのファイル）があると止まり、GAS側の内容を `.gasverify/remote/` に保存する。手元に取り込めば通る。`--force` はGAS側の変更を捨てて上書き |
+| `pull` | GAS側の内容を `.gasverify/remote/<日時>/` に取り、手元との違いを一覧（手元の `src` は上書きしない） |
 | `doctor [--fix]` | 設定・ログイン・スコープ・API・実行を順に検査 |
 | `login` / `logout` | 承認・トークン削除（`~/.gasverify/<profile>/token.json`） |
 
@@ -101,13 +102,14 @@ gasverify help
 
 - **push は clasp ではなく Apps Script API を直接使う**：clasp の別ログインを不要にし、プロファイルごとの認証を1つにまとめるため
 - **前後処理の関数名を `gv_setup` / `gv_teardown` に変更**：末尾 `_` の関数は外から呼べない（実測C10）
+- **push前の差分確認（v0.2.0）**：push は GAS 側を置き換えるため、エディタで直された分が消える。前回 push の内容と GAS 側を比べ、変わっていれば止める（たか田氏の記事「Claude Code×GAS ～claspを入れろ～」第5章の考え方を取り入れた）
 - **未実装**：console.log の取得（F11）、Webアプリ画面確認（10A章、Claude in Chrome 側の手順）、work プロファイルの実機確認、カバレッジ計測（F12）
-- 自動テスト（`npm test`、30件）は模擬APIサーバーで実施。実際の Google との通しは未実施
+- 自動テスト（`npm test`、37件）は模擬APIサーバーで実施。実際の Google との通しは未実施
 
 ## 8. 開発者向け
 
 ```
-npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（30件）
+npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（37件）
 ```
 
 - 要件定義・基本設計書：[docs/design.md](docs/design.md)

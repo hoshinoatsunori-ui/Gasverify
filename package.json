@@ -1,6 +1,6 @@
 {
   "name": "gasverify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Claude Codeが生成したGASを push・実行・判定まで自動で回すCLI",
   "bin": {
     "gasverify": "bin/gasverify.js"
