@@ -74,7 +74,7 @@ Claude Codeが生成したGASを、push・実行・結果判定・修正指示�
 | ID | 機能 | 内容 | 優先度 |
 | --- | --- | --- | --- |
 | F01 | 環境診断（doctor） | ログイン状態、標準プロジェクト紐付け、Apps Script API有効化、API実行可能デプロイ、マニフェストのスコープとトークンのスコープ差分、使用する拡張サービスのAPI有効化を検査し、不足を一覧化 | 必須 |
-| F02 | push | ローカルのソースを対象スクリプトへ反映（clasp push相当）。本番スクリプトIDへのpushは拒否 | 必須 |
+| F02 | push | ローカルのソースを対象スクリプトへ反映（clasp push相当）。本番スクリプトIDへのpushは拒否。push前にGAS側との差分を確認し、GAS側にしかない変更があれば止める | 必須 |
 | F03 | 関数実行（run） | 関数名＋JSON引数を指定しdevModeでscripts.run。戻り値をJSONで標準出力 | 必須 |
 | F04 | テスト実行（test） | 規約に沿ったテスト関数（`test_`接頭辞）を全件または指定分実行し、合否を集計 | 必須 |
 | F05 | 結果判定 | 終了コード0／1／2／3で「成功／コード誤り／準備不足／実行基盤障害」を区別 | 必須 |
@@ -113,7 +113,7 @@ Claude Codeが生成したGASを、push・実行・結果判定・修正指示�
 | C | clasp（push/deploy/logs）＋自作CLI（run/test/doctor/診断） | scripts.runの`ExecutionError`をそのまま扱え、社内制約に合わせた安全策（許可リスト、dry-run）を組み込める | 初期開発が必要（見積りは未実施） | 採用 |
 | D | googleapisで全機能を自作 | 依存が最小 | push・デプロイを再実装する無駄 | 不採用 |
 
-**実装での変更（v0.1.0）**：pushはclaspではなくApps Script API（projects.updateContent）を直接使う。claspの別ログインを不要にし、プロファイルごとの認証を1つにまとめるため。置き換え方式のため、GAS側にだけあるファイルがあればpush前に止める。ログ取得（F11）は未実装。
+**実装での変更（v0.1.0）**：pushはclaspではなくApps Script API（projects.updateContent）を直接使う。claspの別ログインを不要にし、プロファイルごとの認証を1つにまとめるため。置き換え方式のため、エディタで直された分はpushで消える。v0.2.0で、push成功時に送った内容の指紋を `.gasverify/last-push/` に保存し、次のpush前にGAS側がそこから変わっていれば終了コード2で止める（GAS側の内容は `.gasverify/remote/` に保存。手元に取り込めば自動で通る）。初回は手元と違う既存ファイルがあれば止める。比較では改行コード・末尾の空白・JSONのキー順の違いは無視する（Google側の書き換えの有無は未実測）。手元の `src` を上書きしない `pull` を追加。ログ取得（F11）は未実装。
 
 ## 6. システム構成
 
@@ -399,7 +399,7 @@ Q11が不可でも、personalでの試作には影響しない。先にpersonal�
 
 **次の一手**：personalでPoCを続け、Q3（clasp push）、Gmailスコープでの実行、Q5〜Q7（エラー文言・スクリプトの置き場所・行番号）、Q9（iframe内の読み取り）を実測してから詳細設計に進む。案A（gasrun）の試用は任意とする。
 
-**実装状況（2026-11-03、v0.1.0）**：CLI（init・login・logout・doctor・push・run・test・verify）、GAS側ランタイム（GV）、Claude Code連携ファイル、サンプルを実装。自動テスト30件は模擬サーバーで全件成功。実際のGoogleとの通しは未実施。未実装はF11（ログ取得）、F12（カバレッジ）、10A章（Webアプリ画面確認）。
+**実装状況（2026-11-03、v0.1.0）**：CLI（init・login・logout・doctor・push・run・test・verify）、GAS側ランタイム（GV）、Claude Code連携ファイル、サンプルを実装。自動テスト30件は模擬サーバーで全件成功。v0.2.0（2026-11-05）でpush前の差分確認と `pull` を追加し、テストは37件。実際のGoogleとの通しは未実施。未実装はF11（ログ取得）、F12（カバレッジ）、10A章（Webアプリ画面確認）。
 
 **参考資料**
 
@@ -410,6 +410,7 @@ Q11が不可でも、personalでの試作には影響しない。先にpersonal�
 - [ExecutionError（Apps Script APIリファレンス）](https://developers.google.cn/apps-script/api/reference/rest/v1/ExecutionError?hl=en)
 - [Executing Apps Script Functions（応答例）](https://developers.google.com/apps-script/api/samples/execute)
 - [google/clasp README](https://github.com/google/clasp/blob/master/README.md)
+- たか田「Claude Code×GAS ～claspを入れろ～」（X、2026-11-04）：push前の差分確認、アカウント取り違え、見出し名で列を探す決まり、WebアプリのURLを変えない更新
 
 * [Web Apps（Apps Script）](https://developers.google.com/apps-script/guides/web)
 * [HTML Service: Restrictions（iframeによる隔離）](https://developers.google.com/apps-script/guides/html/restrictions)
