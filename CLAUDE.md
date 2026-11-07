@@ -61,11 +61,11 @@ npm test        # 47件。模擬サーバー相手の通しを含む（実際の
 - 例外オブジェクトの `message` を書き換えて投げ直すと、`errorMessage` に反映され、スタックの行番号は保たれる（F11 の GV_LOGS）
 - C12 実行時間超過は `code=4`（公式の10ではない）・`errorType=SCRIPT_TIMEOUT`、スタックもログも返らない。errorType で判定する
 - H08 ユーザー設定で Apps Script API がオフのとき、止まるのは push だけ（403「User has not enabled the Apps Script API」）。run・pull・doctor は通るので doctor では検出できない
+- H06 Cloud プロジェクト側で Apps Script API を無効にすると、run・pull・push すべてが 403（`accessNotConfigured`／`SERVICE_DISABLED`）。doctor でも検出でき、判定は推定どおり
 - example で実際に verify すると `example/.gasverify/` に失敗回数などが残る。e2e はこれを持ち込まないよう複製時に除く
 
 ## 未実装・未確認（優先順）
 
-1. 未実測ケース：H06 Cloudプロジェクト側で Apps Script API を無効にしたとき（ユーザー設定のオフは H08 として実測済み。手順は tools/gas-measure/README_measure.md）
-2. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り。デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
-3. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）
-4. F12 カバレッジ簡易計測
+1. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り。デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
+2. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）
+3. F12 カバレッジ簡易計測
