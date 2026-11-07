@@ -46,7 +46,23 @@ test('H07 コードが1つもないプロジェクト（2026-11-07実測）は�
   assert.strictEqual(c.reason, 'runtime_not_pushed');
 });
 
-test('code=10（SCRIPT_TIMEOUT）は 1', () => {
+test('C12 実行時間超過（2026-11-07実測：code=4、SCRIPT_TIMEOUT、スタックなし）は 1・timeout', () => {
+  const r = { http: 200, data: { done: true, error: { code: 4, message: 'Exceeded maximum execution time', details: [{ errorType: 'SCRIPT_TIMEOUT', errorMessage: 'Exceeded maximum execution time' }] } } };
+  const c = classify(Object.assign(r, { fn: 'test_x' }));
+  assert.strictEqual(c.exitCode, 1);
+  assert.strictEqual(c.reason, 'timeout');
+  assert.match(c.next, /limit/);
+});
+
+test('H08 ユーザー設定で Apps Script API がオフ（2026-11-07実測、push の応答）は 2', () => {
+  const msg = 'User has not enabled the Apps Script API. Enable it by visiting https://script.google.com/home/usersettings then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.';
+  const r = { http: 403, data: { error: { code: 403, message: msg, errors: [{ message: msg, domain: 'global', reason: 'forbidden' }], status: 'PERMISSION_DENIED' } } };
+  const c = classify(Object.assign(r, { fn: '' }));
+  assert.strictEqual(c.exitCode, 2);
+  assert.strictEqual(c.reason, 'user_api_setting_off');
+});
+
+test('code=10（SCRIPT_TIMEOUT、公式仕様）も 1', () => {
   const r = { http: 200, data: { error: { code: 10, message: 'Exceeded maximum execution time', details: [{ errorType: 'SCRIPT_TIMEOUT', errorMessage: 'Exceeded maximum execution time' }] } } };
   assert.strictEqual(classify(r).reason, 'timeout');
 });
