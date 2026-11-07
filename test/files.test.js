@@ -56,3 +56,14 @@ test('静的検査：副作用APIの直接呼び出しと末尾_のテスト関�
   const w = files.staticChecks(cfg, list);
   assert.deepStrictEqual(w.map((x) => `${x.rule}@${x.where}`), ['direct_side_effect@src/Main.js:2', 'private_test@test/t.js:1']);
 });
+
+test('F12 テストのない公開関数を列挙（名前の一致だけ。メソッド呼び出し・部分一致・末尾_は数えない）', () => {
+  const cfg = project({
+    'src/appsscript.json': MANIFEST,
+    'src/Main.js': 'function parseAmount(t) {}\nfunction notify(x) {}\nfunction helper_() {}\nfunction $go() {}\nfunction sub() {}\n',
+    'test/test_Main.js': 'function test_a() {\n  parseAmount(1);\n  x.notify();\n  $go();\n  subtotal();\n}\n',
+  });
+  const { files: list } = files.collectPushFiles(cfg);
+  const u = files.findUntested(Object.assign({ root: cfg.root }, cfg), list);
+  assert.deepStrictEqual(u.map((x) => `${x.function}@${x.file}:${x.line}`), ['notify@src/Main.js:2', 'sub@src/Main.js:5']);
+});

@@ -69,6 +69,8 @@ test('verify の通し：検出 → 修正 → 成功', async (t) => {
   assert.deepStrictEqual([f.location.file, f.location.line], ['src/Receipt.js', 11]);
   assert.strictEqual(f.error.type, 'Error');
   assert.strictEqual(f.consecutiveFailures, 1);
+  // example は parseAmount・notifyTotal の両方にテストがある（F12）
+  assert.deepStrictEqual(r.diag.untested, []);
   // テストモードなのでメールは送られず、記録だけ残る
   assert.strictEqual(mock.state.sentMail.length, 0);
   assert.deepStrictEqual(r.diag.sideEffects.map((s) => `${s.test}:${s.type}`), ['test_notifyTotal_sendsOneMailInTestMode:mail']);
