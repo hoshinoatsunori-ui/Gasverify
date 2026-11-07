@@ -215,9 +215,11 @@ CLI（仮称`gasverify`）は5コマンド。AIは終了コードだけで次の
 | HTTP 200、`errorType=FUNCTION_NOT_FOUND` | 1または2 | ローカルにその関数があれば2（push漏れ）、なければ1（関数名の誤り）（H01） |
 | HTTP 200、`errorType=USER_ERROR`、メッセージに「reading from storage. Error code NOT_FOUND」 | 2 | コードが1つもないプロジェクト（clasp create 直後など）では関数名によらずこの応答になる。未pushとして扱い、doctor --fix の自動pushにつなげる（H07、2026-11-07実測） |
 | HTTP 200、正常応答 | 0 | ただし戻り値に`[native code]`を含む場合は「固有オブジェクトを返している」として1（C06） |
+| HTTP 200、`errorType=SCRIPT_TIMEOUT` | 1 | 実行時間の上限超過。`code`は公式の10ではなく4で返り、スタックもログも返らない（C12、2026-11-07実測）。処理件数を減らす引数を設けるよう案内する |
 | HTTP 401 UNAUTHENTICATED | 2 | トークン無効。再ログインを案内（H04） |
 | HTTP 403 PERMISSION\_DENIED「The caller does not have permission」 | 1または2 | 末尾が`_`の関数を呼んだ場合もこの応答になる（C10）。呼び出し前に関数名を検査し、末尾`_`なら1。それ以外は2（プロジェクト不一致やオーナー違いを案内） |
 | 承認画面で403 access\_denied | 2 | テストユーザー未登録（13章の注意） |
+| HTTP 403 PERMISSION\_DENIED「User has not enabled the Apps Script API」 | 2 | ユーザー設定（script.google.com/home/usersettings）でApps Script APIがオフ。止まるのはpush（projects.updateContent）だけで、scripts.run・projects.get・getContentは通るため、doctorでは検出できない（H08、2026-11-07実測） |
 | HTTP 500 INTERNAL backendError | 3または2 | スクリプトIDの誤りでも500が返る（H02）。呼び出し前にIDを許可リストと照合し、照合済みなら3として最大2回再試行。続く場合は2としてIDの確認を案内 |
 
 実測で分かったその他の仕様（個人Gmail、1回の測定）：
@@ -226,11 +228,11 @@ CLI（仮称`gasverify`）は5コマンド。AIは終了コードだけで次の
 - **戻り値**：DateはISO形式の文字列、undefinedはnullとして届く。引数の文字列・数値・オブジェクトは型を保って届く
 - **応答時間**：1回あたり約0.6〜2.1秒。N06（60秒以内）は十分に満たす
 - **要再確認**：H03（devMode=false）とH05（マニフェストより狭いスコープのトークン）はエラーを予想したが成功した。理由は未確定のため、検証は常にdevMode=trueで行い、スコープ不足は事前検査（doctor）に頼らず実行結果（C05の型）で拾う
-- **未測定**：C12（実行時間超過）、H06（Apps Script API無効時）、console.logの取得
+- **未測定**：H06（Cloudプロジェクト側でApps Script APIを無効にしたとき）。C12とconsole.logの取得（F11）は2026-11-07に実測済み
 
 **H03の解釈（推定）**：再デプロイしていないのにdevMode=falseで最新コードが動いた。公式リファレンスでは実行対象の指定は「API実行可能デプロイのID」とされており、スクリプトIDは常に最新コードを指す「headデプロイ」として扱われている可能性が高い。本ツールでは「スクリプトID＋devMode=true＝最新コード」だけを使い、特定の版を動かしたい場合は版付きデプロイIDを指定する。
 
-**C12の予想（公式仕様、未測定）**：エラーの`code`は10がSCRIPT\_TIMEOUT、3がINVALID\_ARGUMENT、1がCANCELLED。C12は`code=10`で返ると予想されるため、判定表では`code=10`を1（処理量を減らす修正）とする。
+**C12の予想と実測**：公式仕様ではエラーの`code`は10がSCRIPT\_TIMEOUT、3がINVALID\_ARGUMENT、1がCANCELLEDとされ、`code=10`で返ると予想していた。2026-11-07の実測では`code=4`・`errorType=SCRIPT_TIMEOUT`で返ったため、判定は`errorType`で行い、`code=10`も念のため残す。
 
 **9.4 診断書（F06）**
 
@@ -378,7 +380,7 @@ Q1・Q2のどちらかが「不可」なら、本方式は業務環境で成立�
 | Q2 | 自作OAuthクライアント（内部アプリ）への承認が許可されるか | Workspace管理者 | 不可なら方式不成立 |
 | Q3 | ユーザー設定でApps Script APIをオンにできるか | 自分で確認 | 不可ならpush自動化のみ不可 |
 | Q4 | gasrunの配布形態・ライセンス・社内利用可否 | 記事著者の公開情報／社内ルール | 案AのPoC可否 |
-| Q5 | 準備不足・権限エラーの具体的なHTTPステータスと文言 | PoCで実測 | 9.3の判定表（2026-11-03実測済み。C12・H06は未測定） |
+| Q5 | 準備不足・権限エラーの具体的なHTTPステータスと文言 | PoCで実測 | 9.3の判定表（2026-11-03実測済み。C12・H07・H08は2026-11-07実測。H06は未測定） |
 | Q6 | 共有ドライブ配下のスクリプトでdevMode実行ができるか（オーナーの扱い） | PoCで実測 | 検証用スクリプトの置き場所 |
 | Q7 | スタックの行番号が各ファイル内の行と一致するか（ファイル名は返らないため、関数名から逆引き） | PoCで実測 | 診断書のlocation精度（実測済み：ファイル内の行番号と一致） |
 | Q8 | 自宅PCのOSとNode.jsのバージョン | 自分で確認 | N08・N09 |
@@ -401,7 +403,7 @@ Q11が不可でも、personalでの試作には影響しない。先にpersonal�
 
 **次の一手**：personalでPoCを続け、Q3（clasp push）、Gmailスコープでの実行、Q5〜Q7（エラー文言・スクリプトの置き場所・行番号）、Q9（iframe内の読み取り）を実測してから詳細設計に進む。案A（gasrun）の試用は任意とする。
 
-**実装状況（2026-11-03、v0.1.0）**：CLI（init・login・logout・doctor・push・run・test・verify）、GAS側ランタイム（GV）、Claude Code連携ファイル、サンプルを実装。自動テスト30件は模擬サーバーで全件成功。v0.2.0（2026-11-05）でpush前の差分確認と `pull` を追加し、テストは37件。2026-11-07に実際のGoogleでの通し（example：終了コード1→修正→0）を確認し、H07（コードが空のプロジェクト）を判定表に追加。同日F11（ログ取得）を実装し、テストは45件。未実装はF12（カバレッジ）、10A章（Webアプリ画面確認）。
+**実装状況（2026-11-03、v0.1.0）**：CLI（init・login・logout・doctor・push・run・test・verify）、GAS側ランタイム（GV）、Claude Code連携ファイル、サンプルを実装。自動テスト30件は模擬サーバーで全件成功。v0.2.0（2026-11-05）でpush前の差分確認と `pull` を追加し、テストは37件。2026-11-07に実際のGoogleでの通し（example：終了コード1→修正→0）を確認し、H07（コードが空のプロジェクト）を判定表に追加。同日F11（ログ取得）を実装し、C12・H08を実測して判定表に反映。テストは47件。未実装はF12（カバレッジ）、10A章（Webアプリ画面確認）。
 
 **参考資料**
 

@@ -17,7 +17,8 @@ const SCRIPT_ID = '1abcDEFghiJKLmnoPQRstuVWXyz0123456789abcdefGHIJKLmnopqrs';
 function setup() {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gv-home-'));
   const proj = fs.mkdtempSync(path.join(os.tmpdir(), 'gv-proj-'));
-  fs.cpSync(path.join(__dirname, '..', 'example'), proj, { recursive: true });
+  // example で実際に verify した状態（.gasverify の失敗回数など）は持ち込まない
+  fs.cpSync(path.join(__dirname, '..', 'example'), proj, { recursive: true, filter: (src) => path.basename(src) !== '.gasverify' });
   const cfgPath = path.join(proj, 'gasverify.config.json');
   const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
   cfg.profiles.personal = { scriptId: SCRIPT_ID, allowedScriptIds: [SCRIPT_ID] };
