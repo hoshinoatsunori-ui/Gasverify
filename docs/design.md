@@ -215,7 +215,7 @@ CLI（仮称`gasverify`）は5コマンド。AIは終了コードだけで次の
 | HTTP 200、`errorType=USER_ERROR`、メッセージに「Specified permissions are not sufficient」 | 2 | GAS内の権限不足。メッセージ内の「Required permissions」のスコープを診断書に出す（C05） |
 | HTTP 200、`errorType=USER_ERROR`（上記以外） | 1 | JSの例外種別は`errorType`ではなく、`errorMessage`の先頭（`TypeError:`など）から取る（C01〜C04、L01・L02） |
 | HTTP 200、`errorType=FUNCTION_NOT_FOUND` | 1または2 | ローカルにその関数があれば2（push漏れ）、なければ1（関数名の誤り）（H01） |
-| HTTP 200、`errorType=USER_ERROR`、メッセージに「reading from storage. Error code NOT_FOUND」 | 2 | コードが1つもないプロジェクト（clasp create 直後など）では関数名によらずこの応答になる。未pushとして扱い、doctor --fix の自動pushにつなげる（H07、2026-11-07実測） |
+| HTTP 200、`errorType=USER_ERROR`、メッセージに「reading from storage. Error code NOT_FOUND」 | 2 | GAS側のマニフェストに`executionApi`（API実行可能）が無いと、関数名によらずこの応答になる（H07、2026-11-07実測）。当初は「コードが空のプロジェクト」と解釈したが、実プロジェクト（mywork-dashboard2）でコードをpush済みでも起き、`executionApi`を足すと解消したため訂正した。doctorは手元のマニフェストを事前に検査し、無ければ準備不足とする（push・verifyでは警告）。手元にあってGAS側に無い場合はdoctor --fixの自動pushで解消する |
 | HTTP 200、正常応答 | 0 | ただし戻り値に`[native code]`を含む場合は「固有オブジェクトを返している」として1（C06） |
 | HTTP 200、`errorType=SCRIPT_TIMEOUT` | 1 | 実行時間の上限超過。`code`は公式の10ではなく4で返り、スタックもログも返らない（C12、2026-11-07実測）。処理件数を減らす引数を設けるよう案内する |
 | HTTP 401 UNAUTHENTICATED | 2 | トークン無効。再ログインを案内（H04） |
@@ -409,7 +409,7 @@ Q11が不可でも、personalでの試作には影響しない。先にpersonal�
 
 **次の一手**：personalでPoCを続け、Q3（clasp push）、Gmailスコープでの実行、Q5〜Q7（エラー文言・スクリプトの置き場所・行番号）、Q9（iframe内の読み取り）を実測してから詳細設計に進む。案A（gasrun）の試用は任意とする。
 
-**実装状況（2026-11-03、v0.1.0）**：CLI（init・login・logout・doctor・push・run・test・verify）、GAS側ランタイム（GV）、Claude Code連携ファイル、サンプルを実装。自動テスト30件は模擬サーバーで全件成功。v0.2.0（2026-11-05）でpush前の差分確認と `pull` を追加し、テストは37件。2026-11-07に実際のGoogleでの通し（example：終了コード1→修正→0）を確認し、H07（コードが空のプロジェクト）を判定表に追加。同日F11（ログ取得）を実装し、C12・H06・H08を実測して判定表に反映。テストは47件。同日F12（カバレッジ簡易計測）を実装し、テストは48件。同日10A章（Webアプリ画面確認）のサンプル・`devUrl`・`/gas-verify-web`を追加し、Q9を実測（iframeの中は読めないため座標とスクリーンショットで確認）。テストは49件。2026-11-07、会社利用（workプロファイル）は中止し、personalのみで進める方針とした。personalでの未実装はなし。
+**実装状況（2026-11-03、v0.1.0）**：CLI（init・login・logout・doctor・push・run・test・verify）、GAS側ランタイム（GV）、Claude Code連携ファイル、サンプルを実装。自動テスト30件は模擬サーバーで全件成功。v0.2.0（2026-11-05）でpush前の差分確認と `pull` を追加し、テストは37件。2026-11-07に実際のGoogleでの通し（example：終了コード1→修正→0）を確認し、H07（コードが空のプロジェクト）を判定表に追加。同日F11（ログ取得）を実装し、C12・H06・H08を実測して判定表に反映。テストは47件。同日F12（カバレッジ簡易計測）を実装し、テストは48件。同日10A章（Webアプリ画面確認）のサンプル・`devUrl`・`/gas-verify-web`を追加し、Q9を実測（iframeの中は読めないため座標とスクリーンショットで確認）。テストは49件。2026-11-07、会社利用（workプロファイル）は中止し、personalのみで進める方針とした。personalでの未実装はなし。同日、実プロジェクト（mywork-dashboard2）で使って見つかった点を直した：H07の原因の訂正（`executionApi`の事前検査）、`init --src`、案内文のsrc表記、プロジェクトごとのプロファイル（スコープがたまらないように）。テストは52件。
 
 **参考資料**
 

@@ -40,10 +40,11 @@ test('ランタイム未反映（gasverify_invoke が無い）は 2', () => {
   assert.strictEqual(c.reason, 'runtime_not_pushed');
 });
 
-test('H07 コードが1つもないプロジェクト（2026-11-07実測）は未push(2)', () => {
+test('H07 GAS側のマニフェストに executionApi が無い（2026-11-07実測）は 2・execution_api_missing', () => {
   const c = classify(Object.assign(execErr('USER_ERROR', "We're sorry, a server error occurred while reading from storage. Error code NOT_FOUND."), { fn: 'gasverify_ping' }));
   assert.strictEqual(c.exitCode, 2);
-  assert.strictEqual(c.reason, 'runtime_not_pushed');
+  assert.strictEqual(c.reason, 'execution_api_missing');
+  assert.match(c.next, /executionApi/);
 });
 
 test('C12 実行時間超過（2026-11-07実測：code=4、SCRIPT_TIMEOUT、スタックなし）は 1・timeout', () => {

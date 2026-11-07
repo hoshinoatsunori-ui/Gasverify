@@ -268,3 +268,31 @@ test('init：設定とClaude Code連携ファイルを作る', async () => {
   const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'gasverify.config.json'), 'utf8'));
   assert.deepStrictEqual(cfg.profiles.personal.allowedScriptIds, [SCRIPT_ID]);
 });
+
+test('init --src：ソースが src/ 以外のプロジェクト（既存のマニフェストは上書きしない）', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gv-init-'));
+  fs.mkdirSync(path.join(dir, 'gas'));
+  fs.writeFileSync(path.join(dir, 'gas', 'appsscript.json'), '{"timeZone":"Asia/Tokyo"}');
+  const r = await cli({}, dir, 'init', '--script', SCRIPT_ID, '--src', 'gas');
+  assert.strictEqual(r.code, 0, r.stderr);
+  assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, 'gasverify.config.json'), 'utf8')).srcDir, 'gas');
+  assert.ok(!fs.existsSync(path.join(dir, 'src')));
+  assert.ok(r.diag.skipped.includes('gas/appsscript.json'));
+  const md = fs.readFileSync(path.join(dir, 'CLAUDE.md'), 'utf8');
+  assert.ok(md.includes('`gas/`') && !md.includes('`src/`'));
+});
+
+test('doctor：マニフェストに executionApi が無ければ準備不足（H07）', async (t) => {
+  const mock = await startMockServer({ scriptId: SCRIPT_ID });
+  t.after(() => mock.close());
+  const { home, proj } = setup();
+  const env = { GASVERIFY_HOME: home, GASVERIFY_ROOT_URL: mock.url };
+  const mp = path.join(proj, 'src', 'appsscript.json');
+  const m = JSON.parse(fs.readFileSync(mp, 'utf8'));
+  delete m.executionApi;
+  fs.writeFileSync(mp, JSON.stringify(m));
+  const r = await cli(env, proj, 'doctor');
+  assert.strictEqual(r.code, 2, r.stderr);
+  assert.ok(r.diag.checks.some((c) => c.name === 'API実行可能（executionApi）' && !c.ok));
+  assert.match(r.diag.next, /executionApi/);
+});

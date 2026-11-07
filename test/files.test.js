@@ -16,7 +16,7 @@ function project(layout) {
   return { root, srcDir: path.join(root, 'src'), testDir: path.join(root, 'test') };
 }
 
-const MANIFEST = JSON.stringify({ timeZone: 'Asia/Tokyo', oauthScopes: [] });
+const MANIFEST = JSON.stringify({ timeZone: 'Asia/Tokyo', oauthScopes: [], executionApi: { access: 'MYSELF' } });
 
 test('push対象の収集・関数対応表・テスト発見', () => {
   const cfg = project({
@@ -55,6 +55,16 @@ test('静的検査：副作用APIの直接呼び出しと末尾_のテスト関�
   const { files: list } = files.collectPushFiles(cfg);
   const w = files.staticChecks(cfg, list);
   assert.deepStrictEqual(w.map((x) => `${x.rule}@${x.where}`), ['direct_side_effect@src/Main.js:2', 'private_test@test/t.js:1']);
+});
+
+test('静的検査：マニフェストに executionApi が無ければ警告（H07）', () => {
+  const cfg = project({
+    'src/appsscript.json': JSON.stringify({ timeZone: 'Asia/Tokyo', oauthScopes: [] }),
+    'src/Main.js': 'function a() {}\n',
+  });
+  cfg.root = path.dirname(cfg.srcDir);
+  const { files: list } = files.collectPushFiles(cfg);
+  assert.deepStrictEqual(files.staticChecks(cfg, list).map((x) => x.rule), ['execution_api_missing']);
 });
 
 test('F12 テストのない公開関数を列挙（名前の一致だけ。メソッド呼び出し・部分一致・末尾_は数えない）', () => {
