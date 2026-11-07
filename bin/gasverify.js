@@ -3,7 +3,7 @@
 /**
  * gasverify — Claude Codeが生成したGASを push・実行・判定まで自動で回すCLI
  *
- *   gasverify init [--script <ID>]           設定ファイルとClaude Code連携ファイルを作る
+ *   gasverify init [--script <ID>] [--src <dir>]  設定ファイルとClaude Code連携ファイルを作る（ソースが src/ 以外なら --src）
  *   gasverify login [--profile p]            ブラウザで承認（必要なスコープはマニフェストから決める）
  *   gasverify logout [--profile p]           トークンを削除
  *   gasverify doctor [--fix]                 準備状況を検査（--fix は権限を広げない下準備のみ自動実行）

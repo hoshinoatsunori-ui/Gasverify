@@ -34,7 +34,7 @@ Claude Code が生成した GAS を push → テスト実行 → 判定 → 診�
 
 ```
 npm install
-npm test        # 49件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
+npm test        # 52件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
 ```
 
 - e2e テストは模擬サーバーと同じプロセスで動くため、CLI は必ず非同期（execFile）で呼ぶ。spawnSync を使うとサーバーが応答できずに止まる
@@ -55,7 +55,7 @@ npm test        # 49件。模擬サーバー相手の通しを含む（実際の
 
 - 実際の Google での通し確認済み：example で verify → 終了コード1（4件中3件成功、`src/Receipt.js:11`）→ 修正 → 0
 - 「API実行可能」デプロイを作らなくても、スクリプトID指定で実行できた
-- コードが1つもないプロジェクト（clasp create 直後）は、関数名によらず USER_ERROR「reading from storage. Error code NOT_FOUND」（H07）。未push（2）として扱う
+- H07 GAS側のマニフェストに `executionApi` が無いと、関数名によらず USER_ERROR「reading from storage. Error code NOT_FOUND」。当初「コードが空のプロジェクト」と解釈したが誤りで、実プロジェクトでコードを push 済みでも起きた。doctor が手元のマニフェストを事前に検査する（2）
 - 新規プロジェクトへの初回 push は、GAS側の初期 appsscript.json と手元が違うため差分確認で止まる。中身を確認して `push --force`
 - `console.log` 等は writable=false・configurable=true。代入は黙って無視されるため、ランタイムは `Object.defineProperty` で差し替える（F11）
 - 例外オブジェクトの `message` を書き換えて投げ直すと、`errorMessage` に反映され、スタックの行番号は保たれる（F11 の GV_LOGS）

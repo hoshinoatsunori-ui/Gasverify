@@ -54,10 +54,24 @@ Webアプリの画面確認（10A章）も試す場合は、GASエディタの�
 
 ```
 cd <プロジェクト>
-gasverify init --script <スクリプトID>
+gasverify init --script <スクリプトID>    # ソースが src/ 以外なら --src gas のように指定
 gasverify login
 gasverify doctor --fix
 ```
+
+- マニフェスト（`appsscript.json`）に `"executionApi": { "access": "MYSELF" }` が必要。無いと GAS 側で関数を実行できない（doctor が検査する）
+- `login` はマニフェストのスコープをすべて承認する。プロファイルは承認をためていくので、強いスコープ（Gmail など）を使うプロジェクトは、プロファイルを分けると他のプロジェクトに権限が広がらない。OAuth クライアントは共有できる：
+
+```json
+"profiles": {
+  "dashboard": {
+    "scriptId": "...", "allowedScriptIds": ["..."],
+    "credentials": "~/.gasverify/personal/credentials.json"
+  }
+}
+```
+
+（`"defaultProfile": "dashboard"` にするか、各コマンドに `--profile dashboard` を付ける。トークンは `~/.gasverify/dashboard/` に保存され、`gasverify logout --profile dashboard` で消せる）
 
 `init` は次を作る（既存のファイルは上書きしない）。
 
@@ -109,12 +123,12 @@ gasverify help
 - **ログ取得（F11）は Cloud Logging を使わない**：ランタイムが実行中の `console.*` と `GV.log` を記録し、失敗したテストの診断書の `logs` に添付する。追加のスコープが不要で、反映の遅れもないため
 - **Webアプリ画面確認（10A章）は座標とスクリーンショットで行う**：GAS の画面は別ドメインの iframe の中にあり、Claude in Chrome でも要素・コンソールを読めない（Q9実測）。結果は画面上の文言で判定する
 - **会社利用は中止**：work プロファイルは仕組みだけ残し、動作は確認しない。personal での未実装はなし
-- 自動テスト（`npm test`、49件）は模擬APIサーバーで実施。実際の Google との通しは 2026-11-07 に実施済み
+- 自動テスト（`npm test`、52件）は模擬APIサーバーで実施。実際の Google との通しは 2026-11-07 に実施済み
 
 ## 8. 開発者向け
 
 ```
-npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（49件）
+npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（52件）
 ```
 
 - 要件定義・基本設計書：[docs/design.md](docs/design.md)
