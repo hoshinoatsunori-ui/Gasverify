@@ -40,6 +40,12 @@ test('ランタイム未反映（gasverify_invoke が無い）は 2', () => {
   assert.strictEqual(c.reason, 'runtime_not_pushed');
 });
 
+test('H07 コードが1つもないプロジェクト（2026-11-07実測）は未push(2)', () => {
+  const c = classify(Object.assign(execErr('USER_ERROR', "We're sorry, a server error occurred while reading from storage. Error code NOT_FOUND."), { fn: 'gasverify_ping' }));
+  assert.strictEqual(c.exitCode, 2);
+  assert.strictEqual(c.reason, 'runtime_not_pushed');
+});
+
 test('code=10（SCRIPT_TIMEOUT）は 1', () => {
   const r = { http: 200, data: { error: { code: 10, message: 'Exceeded maximum execution time', details: [{ errorType: 'SCRIPT_TIMEOUT', errorMessage: 'Exceeded maximum execution time' }] } } };
   assert.strictEqual(classify(r).reason, 'timeout');

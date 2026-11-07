@@ -212,6 +212,7 @@ CLI（仮称`gasverify`）は5コマンド。AIは終了コードだけで次の
 | HTTP 200、`errorType=USER_ERROR`、メッセージに「Specified permissions are not sufficient」 | 2 | GAS内の権限不足。メッセージ内の「Required permissions」のスコープを診断書に出す（C05） |
 | HTTP 200、`errorType=USER_ERROR`（上記以外） | 1 | JSの例外種別は`errorType`ではなく、`errorMessage`の先頭（`TypeError:`など）から取る（C01〜C04、L01・L02） |
 | HTTP 200、`errorType=FUNCTION_NOT_FOUND` | 1または2 | ローカルにその関数があれば2（push漏れ）、なければ1（関数名の誤り）（H01） |
+| HTTP 200、`errorType=USER_ERROR`、メッセージに「reading from storage. Error code NOT_FOUND」 | 2 | コードが1つもないプロジェクト（clasp create 直後など）では関数名によらずこの応答になる。未pushとして扱い、doctor --fix の自動pushにつなげる（H07、2026-11-07実測） |
 | HTTP 200、正常応答 | 0 | ただし戻り値に`[native code]`を含む場合は「固有オブジェクトを返している」として1（C06） |
 | HTTP 401 UNAUTHENTICATED | 2 | トークン無効。再ログインを案内（H04） |
 | HTTP 403 PERMISSION\_DENIED「The caller does not have permission」 | 1または2 | 末尾が`_`の関数を呼んだ場合もこの応答になる（C10）。呼び出し前に関数名を検査し、末尾`_`なら1。それ以外は2（プロジェクト不一致やオーナー違いを案内） |

@@ -109,7 +109,7 @@ gasverify help
 ## 8. 開発者向け
 
 ```
-npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（37件）
+npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（38件）
 ```
 
 - 要件定義・基本設計書：[docs/design.md](docs/design.md)
