@@ -8,5 +8,9 @@
   ],
   "executionApi": {
     "access": "MYSELF"
+  },
+  "webapp": {
+    "executeAs": "USER_ACCESSING",
+    "access": "MYSELF"
   }
 }

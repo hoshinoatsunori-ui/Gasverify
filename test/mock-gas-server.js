@@ -21,6 +21,14 @@ function startMockServer({ scriptId, initialFiles = [], mode = {} } = {}) {
       UrlFetchApp: { fetch: () => { throw new Error('real fetch in mock'); } },
       ScriptApp: { newTrigger: () => { throw new Error('real trigger in mock'); } },
       Utilities: { newBlob: () => ({ getDataAsString: function () {} }) },
+      HtmlService: {
+        createHtmlOutputFromFile: (name) => {
+          const f = state.files.find((x) => x.type === 'HTML' && x.name === name);
+          if (!f) throw new Error(`No HTML file named ${name} was found.`);
+          const out = { setTitle: () => out, getContent: () => f.source };
+          return out;
+        },
+      },
     };
     vm.createContext(sandbox);
     for (const f of state.files.filter((x) => x.type === 'SERVER_JS')) {

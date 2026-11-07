@@ -62,14 +62,14 @@ test('verify の通し：検出 → 修正 → 成功', async (t) => {
   // verify：全角￥のテストだけ失敗し、終了コード1
   r = await cli(env, proj, 'verify');
   assert.strictEqual(r.code, 1, r.stderr);
-  assert.match(r.diag.summary, /4 件中 3 件成功、1 件失敗/);
+  assert.match(r.diag.summary, /6 件中 5 件成功、1 件失敗/);
   const f = r.diag.failedTests[0];
   assert.strictEqual(f.name, 'test_parseAmount_fullwidthYen');
   // 期待値ではなく実装（parseAmount）の例外箇所が指される
   assert.deepStrictEqual([f.location.file, f.location.line], ['src/Receipt.js', 11]);
   assert.strictEqual(f.error.type, 'Error');
   assert.strictEqual(f.consecutiveFailures, 1);
-  // example は parseAmount・notifyTotal の両方にテストがある（F12）
+  // example は本体の公開関数すべてにテストがある（F12）
   assert.deepStrictEqual(r.diag.untested, []);
   // テストモードなのでメールは送られず、記録だけ残る
   assert.strictEqual(mock.state.sentMail.length, 0);
@@ -80,7 +80,7 @@ test('verify の通し：検出 → 修正 → 成功', async (t) => {
   fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('/¥\\s*([\\d,]+)/', '/[¥￥]\\s*([\\d,]+)/'));
   r = await cli(env, proj, 'verify');
   assert.strictEqual(r.code, 0, r.stderr + JSON.stringify(r.diag));
-  assert.strictEqual(r.diag.passed.length, 4);
+  assert.strictEqual(r.diag.passed.length, 6);
   assert.ok(fs.readdirSync(path.join(proj, '.gasverify', 'runs')).length >= 4);
 });
 
@@ -109,6 +109,25 @@ test('doctor --fix の自動pushが差分確認で止まったら、その案内
   assert.strictEqual(mock.state.pushes, 0);
   assert.match(r.diag.summary, /1 件の準備不足/);
   assert.match(r.diag.next, /push --force/);
+});
+
+test('doctor：画面確認URL（devUrl）は /dev だけを受け付け、本番の /exec なら止める', async (t) => {
+  const mock = await startMockServer({ scriptId: SCRIPT_ID });
+  t.after(() => mock.close());
+  const { home, proj } = setup();
+  const env = { GASVERIFY_HOME: home, GASVERIFY_ROOT_URL: mock.url };
+  const cfgPath = path.join(proj, 'gasverify.config.json');
+  const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+  cfg.profiles.personal.devUrl = 'https://script.google.com/macros/s/AKfycbxEXAMPLE/exec';
+  fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+  let r = await cli(env, proj, 'doctor');
+  assert.strictEqual(r.code, 2, r.stderr);
+  assert.ok(r.diag.checks.some((c) => c.name === '画面確認URL（devUrl）' && !c.ok));
+  cfg.profiles.personal.devUrl = 'https://script.google.com/macros/s/AKfycbxEXAMPLE/dev';
+  fs.writeFileSync(cfgPath, JSON.stringify(cfg, null, 2));
+  r = await cli(env, proj, 'doctor', '--fix');
+  assert.strictEqual(r.code, 0, r.stderr);
+  assert.ok(r.diag.checks.some((c) => c.name === '画面確認URL（devUrl）' && c.ok));
 });
 
 test('安全策：許可リスト外・リモートだけのファイル・構文エラー', async (t) => {
@@ -243,7 +262,7 @@ test('init：設定とClaude Code連携ファイルを作る', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gv-init-'));
   const r = await cli({}, dir, 'init', '--script', SCRIPT_ID);
   assert.strictEqual(r.code, 0, r.stderr);
-  for (const f of ['gasverify.config.json', 'src/appsscript.json', 'CLAUDE.md', '.claude/commands/gas-verify.md', '.claude/settings.json', '.gitignore']) {
+  for (const f of ['gasverify.config.json', 'src/appsscript.json', 'CLAUDE.md', '.claude/commands/gas-verify.md', '.claude/commands/gas-verify-web.md', '.claude/settings.json', '.gitignore']) {
     assert.ok(fs.existsSync(path.join(dir, f)), f);
   }
   const cfg = JSON.parse(fs.readFileSync(path.join(dir, 'gasverify.config.json'), 'utf8'));
