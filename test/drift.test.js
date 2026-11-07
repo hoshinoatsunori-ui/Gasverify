@@ -33,6 +33,17 @@ test('記録あり：手元が進んでいても GAS 側が前回 push のまま
   assert.strictEqual(drift.checkDrift(c, [js('A', 'v2')], [js('A', 'v1')]).ok, true);
 });
 
+test('記録あり：前回 push したファイルを手元で消しただけなら通す。GAS 側で変わっていれば止める', () => {
+  const c = cfg();
+  drift.saveSnapshot(c, [js('A', 'v1'), js('Tmp', 't')], 'me@example.com');
+  assert.strictEqual(drift.checkDrift(c, [js('A', 'v1')], [js('A', 'v1'), js('Tmp', 't')]).ok, true);
+  const d = drift.checkDrift(c, [js('A', 'v1')], [js('A', 'v1'), js('Tmp', 'edited')]);
+  assert.strictEqual(d.ok, false);
+  assert.deepStrictEqual(d.remoteOnly, ['Tmp.SERVER_JS']);
+  // 前回 push に無く GAS 側で足されたファイルは止める
+  assert.deepStrictEqual(drift.checkDrift(c, [js('A', 'v1')], [js('A', 'v1'), js('New', 'n')]).remoteOnly, ['New.SERVER_JS']);
+});
+
 test('記録あり：GAS 側で変更・削除されたら止める。手元に取り込めば通す', () => {
   const c = cfg();
   drift.saveSnapshot(c, [js('A', 'v1'), js('B', 'b')], 'me@example.com');

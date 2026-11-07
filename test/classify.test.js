@@ -89,3 +89,15 @@ test('補助関数', () => {
   assert.strictEqual(jsErrorType('文字列'), null);
   assert.deepStrictEqual(extractRequiredPermissions('no perms'), []);
 });
+
+test('F11 例外メッセージ末尾の GV_LOGS を取り出し、メッセージと例外種別は元のまま', () => {
+  const c = classify(execErr('USER_ERROR', 'TypeError: x is undefined\nGV_LOGS:["入力 abc","[warn] 注意"]', [{ function: 'f', lineNumber: 3 }]));
+  assert.strictEqual(c.exitCode, 1);
+  assert.strictEqual(c.message, 'TypeError: x is undefined');
+  assert.strictEqual(c.error.type, 'TypeError');
+  assert.deepStrictEqual(c.logs, ['入力 abc', '[warn] 注意']);
+  // 読めない GV_LOGS はメッセージのまま扱う
+  const broken = classify(execErr('USER_ERROR', 'Error: a\nGV_LOGS:["切れ'));
+  assert.strictEqual(broken.logs, undefined);
+  assert.match(broken.message, /GV_LOGS/);
+});
