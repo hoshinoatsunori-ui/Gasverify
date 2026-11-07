@@ -11,7 +11,7 @@
 | 終了コード | 意味 | やること |
 | --- | --- | --- |
 | 0 | 全テスト成功 | 完了。通ったテストと変更点を報告する |
-| 1 | コードの誤り | 標準出力の診断書JSONの `failedTests[].location` と `failedAssertions` を読み、実装を直して再度 verify |
+| 1 | コードの誤り | 標準出力の診断書JSONの `failedTests[].location`・`failedAssertions`・`logs`（実行中の console.log / GV.log）を読み、実装を直して再度 verify |
 | 2 | 準備不足 | **コードは触らない**。`gasverify doctor --fix` を1回だけ実行。解消しなければ `next` の内容を人に依頼して停止 |
 | 3 | 実行基盤の障害 | 30秒ほど待って最大2回再実行。解消しなければ人に報告して停止 |
 

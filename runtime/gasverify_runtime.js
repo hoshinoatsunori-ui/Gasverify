@@ -19,6 +19,22 @@ var GV = (function () {
     return JSON.stringify(a) === JSON.stringify(b);
   }
 
+  // ログの上限（診断書と例外メッセージを大きくしすぎないため。設計書9.2 F11）
+  var LOG_MAX = 50;
+  var LOG_LEN = 500;
+
+  function pushLog(level, args) {
+    var parts = [];
+    for (var i = 0; i < args.length; i++) {
+      var a = args[i];
+      parts.push(typeof a === 'string' ? a : JSON.stringify(plain(a)));
+    }
+    var line = (level ? '[' + level + '] ' : '') + parts.join(' ');
+    if (line.length > LOG_LEN) line = line.slice(0, LOG_LEN) + '…';
+    if (state.logs.length < LOG_MAX) state.logs.push(line);
+    else state.logsDropped = (state.logsDropped || 0) + 1;
+  }
+
   function plain(v) {
     // 戻り値をJSONにできる形へ（Date は ISO 文字列、undefined は null。実測C07/C08と同じ扱い）
     if (v === undefined) return null;
@@ -33,6 +49,10 @@ var GV = (function () {
     _reset: reset,
     _state: function () { return state; },
     _plain: plain,
+    _pushLog: pushLog,
+    _logs: function () {
+      return state.logsDropped ? state.logs.concat(['…(ほか ' + state.logsDropped + ' 件省略)']) : state.logs;
+    },
 
     /** テストモード中か */
     isTestMode: function () { return state.testMode; },
@@ -66,7 +86,7 @@ var GV = (function () {
 
     /** 診断書に載るログ */
     log: function (msg) {
-      state.logs.push(typeof msg === 'string' ? msg : JSON.stringify(plain(msg)));
+      pushLog('', [msg]);
     },
 
     /** メール送信（テストモードでは送らず記録） */
@@ -122,7 +142,8 @@ var GV = (function () {
  * gasverify から scripts.run で呼ばれる入口
  * @param {string} name 実行する関数名
  * @param {{testMode:boolean, args:Array}} options
- * 例外は捕まえずにそのまま投げる（スタックの関数名と行番号を gasverify が使うため）
+ * 例外は同じオブジェクトのまま投げ直す（スタックの関数名と行番号を gasverify が使うため）。
+ * 例外では戻り値でログを返せないので、メッセージ末尾に GV_LOGS:<JSON> を付ける（gasverify が取り出して除く）
  */
 function gasverify_invoke(name, options) {
   options = options || {};
@@ -132,7 +153,36 @@ function gasverify_invoke(name, options) {
     throw new Error('GV_FUNCTION_NOT_FOUND: ' + name);
   }
   GV._reset(options.testMode !== false);
-  var returned = fn.apply(null, options.args || []);
+  // console.* を包んで記録する（元の出力も行う）。
+  // GAS の console.log は writable=false・configurable=true のため、代入は黙って無視される。defineProperty で差し替える（2026-11-07実測）
+  var levels = typeof console !== 'undefined' ? ['log', 'info', 'warn', 'error'] : [];
+  var saved = {};
+  levels.forEach(function (lv) {
+    var orig = console[lv];
+    saved[lv] = Object.getOwnPropertyDescriptor(console, lv);
+    Object.defineProperty(console, lv, {
+      configurable: true, writable: true,
+      value: function () {
+        GV._pushLog(lv === 'log' ? '' : lv, Array.prototype.slice.call(arguments));
+        if (orig) orig.apply(console, arguments);
+      },
+    });
+  });
+  var returned;
+  try {
+    returned = fn.apply(null, options.args || []);
+  } catch (e) {
+    var logs = GV._logs();
+    if (logs.length && e && typeof e === 'object' && typeof e.message === 'string') {
+      e.message += '\nGV_LOGS:' + JSON.stringify(logs);
+    }
+    throw e;
+  } finally {
+    levels.forEach(function (lv) {
+      if (saved[lv]) Object.defineProperty(console, lv, saved[lv]);
+      else delete console[lv];
+    });
+  }
   var st = GV._state();
   var failed = st.assertions.filter(function (a) { return !a.pass; });
   var ok = failed.length === 0;
@@ -149,7 +199,7 @@ function gasverify_invoke(name, options) {
     message: extra.message,
     assertions: st.assertions,
     sideEffects: st.sideEffects,
-    logs: st.logs,
+    logs: GV._logs(),
     returned: GV._plain(returned),
   };
 }

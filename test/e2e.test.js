@@ -94,6 +94,20 @@ test('run：テストモードで戻り値と副作用を返す。--args も渡�
   assert.strictEqual(mock.state.sentMail.length, 0);
 });
 
+test('doctor --fix の自動pushが差分確認で止まったら、その案内を next にする', async (t) => {
+  // clasp create 直後の想定：GAS側には初期マニフェストだけがある
+  const mock = await startMockServer({ scriptId: SCRIPT_ID, initialFiles: [{ name: 'appsscript', type: 'JSON', source: '{"timeZone":"America/New_York","runtimeVersion":"V8"}' }] });
+  t.after(() => mock.close());
+  const { home, proj } = setup();
+  const env = { GASVERIFY_HOME: home, GASVERIFY_ROOT_URL: mock.url };
+
+  const r = await cli(env, proj, 'doctor', '--fix');
+  assert.strictEqual(r.code, 2, r.stderr);
+  assert.strictEqual(mock.state.pushes, 0);
+  assert.match(r.diag.summary, /1 件の準備不足/);
+  assert.match(r.diag.next, /push --force/);
+});
+
 test('安全策：許可リスト外・リモートだけのファイル・構文エラー', async (t) => {
   const mock = await startMockServer({ scriptId: SCRIPT_ID, initialFiles: [{ name: 'Old', type: 'SERVER_JS', source: 'function old() {}' }] });
   t.after(() => mock.close());
