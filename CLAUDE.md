@@ -34,7 +34,7 @@ Claude Code が生成した GAS を push → テスト実行 → 判定 → 診�
 
 ```
 npm install
-npm test        # 37件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
+npm test        # 38件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
 ```
 
 - e2e テストは模擬サーバーと同じプロセスで動くため、CLI は必ず非同期（execFile）で呼ぶ。spawnSync を使うとサーバーが応答できずに止まる
@@ -51,11 +51,17 @@ npm test        # 37件。模擬サーバー相手の通しを含む（実際の
 - `local-auth` と `googleapis` は別版の google-auth-library を使う。資格情報は googleapis 側の OAuth2 に移し替える
 - 外部＋テスト中アプリは基本スコープ以外でテストユーザー登録が必須
 
+追加の実測（2026-11-07、個人Gmail、Windows 11）：
+
+- 実際の Google での通し確認済み：example で verify → 終了コード1（4件中3件成功、`src/Receipt.js:11`）→ 修正 → 0
+- 「API実行可能」デプロイを作らなくても、スクリプトID指定で実行できた
+- コードが1つもないプロジェクト（clasp create 直後）は、関数名によらず USER_ERROR「reading from storage. Error code NOT_FOUND」（H07）。未push（2）として扱う
+- 新規プロジェクトへの初回 push は、GAS側の初期 appsscript.json と手元が違うため差分確認で止まる。中身を確認して `push --force`
+
 ## 未実装・未確認（優先順）
 
-1. 実際の Google での通し確認（example で verify → 終了コード1 → 修正 → 0）
-2. F11 ログ取得（console.log）
-3. 未実測ケース：C12 実行時間超過（code=10 の想定）、H06 Apps Script API 無効時
-4. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り。デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
-5. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）
-6. F12 カバレッジ簡易計測
+1. F11 ログ取得（console.log）
+2. 未実測ケース：C12 実行時間超過（code=10 の想定）、H06 Apps Script API 無効時
+3. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り。デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
+4. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）
+5. F12 カバレッジ簡易計測
