@@ -34,7 +34,7 @@ Claude Code が生成した GAS を push → テスト実行 → 判定 → 診�
 
 ```
 npm install
-npm test        # 48件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
+npm test        # 49件。模擬サーバー相手の通しを含む（実際の Google には接続しない）
 ```
 
 - e2e テストは模擬サーバーと同じプロセスで動くため、CLI は必ず非同期（execFile）で呼ぶ。spawnSync を使うとサーバーが応答できずに止まる
@@ -63,8 +63,11 @@ npm test        # 48件。模擬サーバー相手の通しを含む（実際の
 - H08 ユーザー設定で Apps Script API がオフのとき、止まるのは push だけ（403「User has not enabled the Apps Script API」）。run・pull・doctor は通るので doctor では検出できない
 - H06 Cloud プロジェクト側で Apps Script API を無効にすると、run・pull・push すべてが 403（`accessNotConfigured`／`SERVICE_DISABLED`）。doctor でも検出でき、判定は推定どおり
 - example で実際に verify すると `example/.gasverify/` に失敗回数などが残る。e2e はこれを持ち込まないよう複製時に除く
+- Q9 GAS の Web アプリの画面は `*.googleusercontent.com` の iframe の中にあり、Claude in Chrome の要素一覧・JavaScript・コンソールからは読めない。スクリーンショットと座標でのクリック・入力は効く（10A章はこの方式）
+- `/dev` の URL は `clasp deployments` の `@HEAD` の ID から組み立てられる。マニフェストに `webapp` の設定が要る
 
 ## 未実装・未確認（優先順）
 
-1. 10A章 Web アプリ画面確認（Claude in Chrome）、Q9 iframe 内の読み取り。デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
-2. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）
+※ デプロイ機能を足す場合は、新しいデプロイを作らず既存のデプロイIDを更新する（新しいデプロイはURLが変わり、配布先が止まる）
+
+1. work プロファイル（会社アカウント。Q1・Q2・Q11 の社内確認待ち）

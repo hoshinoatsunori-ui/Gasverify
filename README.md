@@ -42,11 +42,13 @@ cd example
 （gasverify.config.json の scriptId と allowedScriptIds を確認用GASのスクリプトIDに書き換える）
 gasverify login        # ブラウザで承認（script.projects、メール送信のスコープを含む）
 gasverify doctor --fix # 準備を検査。ランタイム未反映なら自動で push
-gasverify verify       # 4件中3件成功・1件失敗、終了コード1になれば正常
+gasverify verify       # 6件中5件成功・1件失敗、終了コード1になれば正常
 ```
 
 続けて、このフォルダで Claude Code を起動し、`/gas-verify` と入力する。
 Claude Code が診断書を読んで `src/Receipt.js` を直し、`verify` が終了コード0になるまで回せば成功。
+
+Webアプリの画面確認（10A章）も試す場合は、GASエディタの「デプロイ」→「デプロイをテスト」で表示される末尾 `/dev` のURLを、`gasverify.config.json` のプロファイルに `"devUrl"` として足し、Claude Code で `/gas-verify-web` と入力する（Claude in Chrome が必要）。シナリオは `test/e2e/check-amount.md`。
 
 ## 4. 自分のプロジェクトで使う
 
@@ -65,6 +67,7 @@ gasverify doctor --fix
 | `src/appsscript.json` | マニフェスト（スコープを増やしたら `gasverify login` で再承認） |
 | `CLAUDE.md` | Claude Code 向けの手順・テスト規約・禁止事項（既存の場合は `CLAUDE.gasverify.md`） |
 | `.claude/commands/gas-verify.md` | `/gas-verify` コマンド |
+| `.claude/commands/gas-verify-web.md` | `/gas-verify-web` コマンド（Webアプリの画面確認。プロファイルに `devUrl` を設定して使う） |
 | `.claude/settings.json` | gasverify は許可、login・push --force・設定変更は確認、clasp の push/deploy は禁止 |
 
 ## 5. テストの書き方（要点）
@@ -104,13 +107,14 @@ gasverify help
 - **前後処理の関数名を `gv_setup` / `gv_teardown` に変更**：末尾 `_` の関数は外から呼べない（実測C10）
 - **push前の差分確認（v0.2.0）**：push は GAS 側を置き換えるため、エディタで直された分が消える。前回 push の内容と GAS 側を比べ、変わっていれば止める（たか田氏の記事「Claude Code×GAS ～claspを入れろ～」第5章の考え方を取り入れた）
 - **ログ取得（F11）は Cloud Logging を使わない**：ランタイムが実行中の `console.*` と `GV.log` を記録し、失敗したテストの診断書の `logs` に添付する。追加のスコープが不要で、反映の遅れもないため
-- **未実装**：Webアプリ画面確認（10A章、Claude in Chrome 側の手順）、work プロファイルの実機確認
-- 自動テスト（`npm test`、48件）は模擬APIサーバーで実施。実際の Google との通しは 2026-11-07 に実施済み
+- **Webアプリ画面確認（10A章）は座標とスクリーンショットで行う**：GAS の画面は別ドメインの iframe の中にあり、Claude in Chrome でも要素・コンソールを読めない（Q9実測）。結果は画面上の文言で判定する
+- **未実装**：work プロファイルの実機確認
+- 自動テスト（`npm test`、49件）は模擬APIサーバーで実施。実際の Google との通しは 2026-11-07 に実施済み
 
 ## 8. 開発者向け
 
 ```
-npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（48件）
+npm test   # 判定ロジック・ファイル収集・GAS側ランタイム・模擬サーバーでの通し（49件）
 ```
 
 - 要件定義・基本設計書：[docs/design.md](docs/design.md)

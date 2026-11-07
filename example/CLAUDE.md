@@ -45,6 +45,14 @@ function test_parseAmount_fullwidthYen() {
 - 列は番号で決め打ちせず、1行目の見出しの名前で探す（相手がシートに列を足すと、番号では別の列を読んでしまう）
 - 普通の JavaScript で書く（TypeScript は push 時に変換されない）
 
+## Webアプリ（画面がある場合）
+
+- 画面の確認は `/gas-verify-web` で行う（Claude in Chrome でテスト用URL `/dev` を開き、`test/e2e/*.md` のシナリオどおりに操作する）。本番URL `/exec` は使わない
+- `gasverify.config.json` のプロファイルに `devUrl`（GASエディタの「デプロイ」→「デプロイをテスト」の末尾 `/dev` のURL）を設定する
+- `google.script.run` には必ず `withFailureHandler` を付け、`console.error` と画面のエラー欄の両方に出す
+- 操作する要素には `data-testid` を付ける。処理の結果は画面上の文言で出す（例：「保存しました」）
+- 画面から呼ぶサーバー側の関数もテストを書く（画面確認は表示と操作の流れに絞る）
+
 ## GAS側との差分
 
 - `gasverify push` / `verify` は、GAS側にしかない変更（エディタで直された分）を見つけると終了コード2で止まり、GAS側の内容を `.gasverify/remote/<日時>/` に保存する

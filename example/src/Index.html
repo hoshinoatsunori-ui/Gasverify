@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <h1>領収書の金額確認</h1>
+    <textarea data-testid="receipt-text" rows="4" cols="40" placeholder="領収書の本文を貼り付け"></textarea>
+    <p><button data-testid="check" onclick="check()">金額を確認</button></p>
+    <p data-testid="result"></p>
+    <p data-testid="error" style="color: #c00"></p>
+    <script>
+      function check() {
+        var text = document.querySelector('[data-testid="receipt-text"]').value;
+        document.querySelector('[data-testid="result"]').textContent = '確認中…';
+        document.querySelector('[data-testid="error"]').textContent = '';
+        google.script.run
+          .withSuccessHandler(function (r) {
+            document.querySelector('[data-testid="result"]').textContent = '金額: ' + r.amount + ' 円';
+          })
+          // 規約：失敗は console.error と画面のエラー欄の両方に出す（10A章）
+          .withFailureHandler(function (e) {
+            console.error(e);
+            document.querySelector('[data-testid="result"]').textContent = '';
+            document.querySelector('[data-testid="error"]').textContent = 'エラー: ' + e.message;
+          })
+          .checkAmount(text);
+      }
+    </script>
+  </body>
+</html>
