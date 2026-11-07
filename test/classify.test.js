@@ -90,9 +90,12 @@ test('H02 500 は 3（再試行対象）', () => {
   assert.strictEqual(classify({ http: 500, data: { error: { status: 'INTERNAL', errors: [{ reason: 'backendError' }] } } }).exitCode, 3);
 });
 
-test('API無効（推定）は 2', () => {
-  const r = { http: 403, data: { error: { message: 'Apps Script API has not been used in project 1 before or it is disabled.', details: [{ reason: 'SERVICE_DISABLED' }] } } };
-  assert.strictEqual(classify(r).reason, 'api_disabled');
+test('H06 Cloud側でAPI無効（2026-11-07実測）は 2', () => {
+  const msg = 'Apps Script API has not been used in project 123456789012 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/script.googleapis.com/overview?project=123456789012 then retry.';
+  const r = { http: 403, data: { error: { code: 403, message: msg, status: 'PERMISSION_DENIED', errors: [{ message: msg, domain: 'usageLimits', reason: 'accessNotConfigured' }], details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'SERVICE_DISABLED' }] } } };
+  const c = classify(Object.assign(r, { fn: '' }));
+  assert.strictEqual(c.exitCode, 2);
+  assert.strictEqual(c.reason, 'api_disabled');
 });
 
 test('通信例外は 3', () => {

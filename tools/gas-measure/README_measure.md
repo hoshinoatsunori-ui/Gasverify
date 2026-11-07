@@ -53,7 +53,7 @@ node measure.js --script <スクリプトID>
 | H03 | devMode=false（デプロイ済みの古い版を実行） | 2 |
 | H04 | 無効なトークン | 2 |
 | H05 | マニフェストより狭いスコープのトークン | 2 |
-| H06 | Apps Script API 無効（手動） | 2 |
+| H06 | Apps Script API 無効（手動。2026-11-07実測：run・pull・push すべて 403 SERVICE_DISABLED） | 2 |
 | H08 | ユーザー設定で Apps Script API をオフ（手動。2026-11-07実測：push だけ 403、run は通る） | 2 |
 
 「期待分類」はこちらの予想。実測結果と食い違ったものが、判定表で特に注意すべき点になる。
